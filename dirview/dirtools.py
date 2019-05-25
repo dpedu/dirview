@@ -94,7 +94,7 @@ class Node:
     def __hash__(self):
         return id(self)
 
-    # def __str__(self):  # TODO
+    # def __str__(self):  # TODO, because the default str() shows all the children recursively
     #     pass
 
 
@@ -177,7 +177,7 @@ def serialize_db(db):
         yield node.serialize()
 
 
-def gen_index(db):
+def gen_node_index(db):
     index = {}
     for node in db.iter():
         index[id(node)] = node
@@ -187,6 +187,43 @@ def gen_index(db):
 def write_db(db, fobj):
     for ob in serialize_db(db):
         fobj.write(json.dumps(ob) + "\n")
+
+
+def load_db(fpath):
+    """
+    Loading the db
+    1) parse all node objects and save them in a cache keyed by the embedded IDs
+    2) for each node in the cache:
+        3) re-establish child/parent pointers
+
+    Note that the cache is discarded and does NOT become the node id cache because it is keyed by the serialized IDs
+
+    On my i7-7920HQ CPU @ 3.10GHz, loading a 276M dump with 2.2M lines takes 22s
+    """
+    nodecache = {}  # mapping of serialized_id->object
+    root = None
+
+    with open(fpath) as f:
+        for line in f.readlines():
+            info = json.loads(line)
+
+            node = Node(name=info["name"],
+                        typ=NodeType(info["typ"]),
+                        children=info["children"],  # keep as IDs for now
+                        size=info["size"],
+                        parent=None)  # this could be 'nodecache[info["parent"]]' but that assumes the dump is in order
+
+            nodecache[info["id"]] = node
+
+            # if node.parent is None:
+            #     root = node
+
+    for oldid, node in nodecache.items():
+        node.children = [nodecache[child_old_id] for child_old_id in node.children]
+        if node.parent is not None:
+            node.parent = nodecache[node.parent]
+
+    return root
 
 
 def test_gen_write_db(path):
@@ -238,42 +275,6 @@ def test_gen_write_db(path):
     # pass
 
 
-def load_db(fpath):
-    """
-    Loading the db
-    1) parse all node objects and save them in a cache keyed by the embedded IDs
-    2) for each node in the cache:
-        3) re-establish child pointers
-        4) re-establish parent pointers
-
-    On my i7-7920HQ CPU @ 3.10GHz, loading a 276M dump with 2.2M lines takes 22s
-    """
-    nodecache = {}  # mapping of serialized_id->object
-    root = None
-
-    with open(fpath) as f:
-        for line in f.readlines():
-            info = json.loads(line)
-
-            node = Node(name=info["name"],
-                        typ=NodeType(info["typ"]),
-                        children=info["children"],  # keep as IDs for now
-                        size=info["size"],
-                        parent=nodecache[info["parent"]])
-
-            nodecache[info["id"]] = node
-
-            if node.parent is None:
-                root = node
-
-    # for oldid, node in nodecache.items():
-    #     node.children = [nodecache[child_old_id] for child_old_id in node.children]
-    #     if node.parent is not None:
-    #         node.parent = nodecache[node.parent]  # this may break on symlinks or other loops?
-
-    return root
-
-
 def test_load_db(fpath):
     print("ready")
     start = time()
@@ -287,7 +288,7 @@ def test_load_db(fpath):
     print(f"counted {count} nodes in {round(time()-start, 2)}s")
 
     start = time()
-    index = gen_index(db)
+    index = gen_node_index(db)
     print(f"generated index with {len(index)} nodes in {round(time()-start, 2)}s")
 
 

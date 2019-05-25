@@ -6,7 +6,7 @@ import logging
 import cherrypy
 from threading import Thread
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from dirview.dirtools import gen_db, gen_index, NodeType, NodeGroup
+from dirview.dirtools import gen_db, gen_node_index, NodeType, NodeGroup
 
 
 APPROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
@@ -24,7 +24,7 @@ class DbUpdater(Thread):
         logging.info("Updating database...")
         self.root = gen_db(self.root_path)
         logging.info("Generating index...")
-        self.index = gen_index(self.root)
+        self.index = gen_node_index(self.root)
         logging.info("Warming caches...")
         self.root.total_size  # calculating these require recursing all nodes
         self.root.total_children
