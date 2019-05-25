@@ -13,16 +13,21 @@ from time import time
 import json
 import resource
 import typing
+import logging
 # import ipdb
 
 
 class NodeType(Enum):
     DIR = auto()
     FILE = auto()
-    ROOT = auto()  #  behaves like a dir but has special handling in some places
-    # TODO use these
+    ROOT = auto()  # behaves like a dir but has special handling in some places
     LINK = auto()
     SPECIAL = auto()
+
+
+class NodeGroup(object):
+    DIRLIKE = {NodeType.DIR, NodeType.ROOT}
+    FILELIKE = {NodeType.FILE, NodeType.LINK, NodeType.SPECIAL}
 
 
 # this costs about 380 bytes per file/directory
@@ -32,16 +37,26 @@ class Node:
     typ: int
     children: list
     size: int
-    parent_id: int
+    parent: "Node"
 
+    total_size_cache: int = None
+
+    @property
     def total_size(self) -> int:
-        if self.typ in {NodeType.DIR, NodeType.ROOT}:
-            sz = 0
-            for node in self.children:
-                sz += node.total_size()
-            return sz
-        else:
-            return self.size
+        if self.total_size_cache is None:
+            if self.typ in {NodeType.DIR, NodeType.ROOT}:
+                self.total_size_cache = sum([node.total_size for node in self.children])
+            else:
+                self.total_size_cache = self.size
+        return self.total_size_cache
+
+    total_children_cache: int = None
+
+    @property
+    def total_children(self) -> int:
+        if self.total_children_cache is None:
+            self.total_children_cache = sum([c.total_children for c in self.children]) + len(self.children)
+        return self.total_children_cache
 
     def serialize(self) -> tuple:
         """
@@ -54,7 +69,7 @@ class Node:
                     typ=self.typ.value,
                     children=[id(n) for n in self.children],
                     size=self.size,
-                    parent_id=self.parent_id,
+                    parent=id(self.parent),
                     id=id(self))
 
     def iter(self, include_self=True) -> typing.Generator["Node", None, None]:
@@ -65,6 +80,19 @@ class Node:
             yield self
         for child in self.children:
             yield from child.iter()
+
+    @property
+    def path(self):
+        parts = [self.name]
+        while True:
+            if self.parent is None:
+                break
+            parts.insert(0, self.parent.name)
+            self = self.parent
+        return parts
+
+    def __hash__(self):
+        return id(self)
 
     # def __str__(self):  # TODO
     #     pass
@@ -82,7 +110,7 @@ def get_type(dirpath):
     # TODO other types
 
 
-def gen_db_recurse(dirpath, parent_id=None, is_root=False):
+def gen_db_recurse(dirpath, parent=None, is_root=False):
     """
     returns a node representing the file/directory at dirpath
     :param dirpath: absolute path to the item
@@ -90,11 +118,11 @@ def gen_db_recurse(dirpath, parent_id=None, is_root=False):
 
     children = []
 
-    node = Node(name=os.path.basename(dirpath),
+    node = Node(name=dirpath if is_root else os.path.basename(dirpath),
                 typ=NodeType.ROOT if is_root else get_type(dirpath),
                 children=children,
                 size=0,
-                parent_id=parent_id)
+                parent=parent)
 
     if node.typ in {NodeType.FILE}:  # todo account for link and dir sizes somewhere
         node.size = os.path.getsize(dirpath)
@@ -104,9 +132,9 @@ def gen_db_recurse(dirpath, parent_id=None, is_root=False):
         try:
             flist = os.listdir(dirpath)
         except PermissionError as e:
-            print(f"Could not access {dirpath}: {e}")
+            logging.info(f"Could not access {dirpath}: {e}")
         for i in flist: # TODO we could probably parallelize the recursion down different trees?
-            children.append(gen_db_recurse(os.path.join(dirpath, i), parent_id=id(node)))
+            children.append(gen_db_recurse(os.path.join(dirpath, i), parent=node))
 
     return node
 
@@ -134,13 +162,13 @@ def serialize_db(db):
 
     This would be serialized as:
 
-    {"name": "root_dir", "typ": 3, "children": [1, 2], "size": 0, "parent_id": null, "id": 0}
-    {"name": "hello.txt", "typ": 2, "children": [], "size": 92863, "parent_id": 0, "id": 1}
-    {"name": "foo", "typ": 1, "children": [3], "size": 0, "parent_id": 0, "id": 2}
-    {"name": "bar.txt", "typ": 2, "children": [], "size": 19459, "parent_id": 2, "id": 3}
+    {"name": "root_dir", "typ": 3, "children": [1, 2], "size": 0, "parent": null, "id": 0}
+    {"name": "hello.txt", "typ": 2, "children": [], "size": 92863, "parent": 0, "id": 1}
+    {"name": "foo", "typ": 1, "children": [3], "size": 0, "parent": 0, "id": 2}
+    {"name": "bar.txt", "typ": 2, "children": [], "size": 19459, "parent": 2, "id": 3}
 
     Note that:
-    - parent_id is null on the root node
+    - parent is null on the root node
     - child/parent relationships are by node id
     - it is possible to append entries to the dump at a later time
     - removing files directly from the serialized dump is technically possible
@@ -201,8 +229,8 @@ def test_gen_write_db(path):
 
     # nodecache = {}
 
-    with open("testdb.jsonl", "w") as f:
-        write_db(db, f)
+    # with open("testdb.jsonl", "w") as f:
+    #     write_db(db, f)
 
     # for node in recurse_nodes(db):
     #     print(node.name)
@@ -216,7 +244,7 @@ def load_db(fpath):
     1) parse all node objects and save them in a cache keyed by the embedded IDs
     2) for each node in the cache:
         3) re-establish child pointers
-        4) re-establish parent pointers TODO if we change parents to be pointers too
+        4) re-establish parent pointers
 
     On my i7-7920HQ CPU @ 3.10GHz, loading a 276M dump with 2.2M lines takes 22s
     """
@@ -231,17 +259,17 @@ def load_db(fpath):
                         typ=NodeType(info["typ"]),
                         children=info["children"],  # keep as IDs for now
                         size=info["size"],
-                        parent_id=info["parent_id"])
+                        parent=nodecache[info["parent"]])
 
             nodecache[info["id"]] = node
 
-            if node.parent_id is None:
+            if node.parent is None:
                 root = node
 
-    for oldid, node in nodecache.items():
-        node.children = [nodecache[child_old_id] for child_old_id in node.children]
-        if node.parent_id is not None:
-            node.parent_id = id(nodecache[node.parent_id])  # this may break on symlinks or other loops?
+    # for oldid, node in nodecache.items():
+    #     node.children = [nodecache[child_old_id] for child_old_id in node.children]
+    #     if node.parent is not None:
+    #         node.parent = nodecache[node.parent]  # this may break on symlinks or other loops?
 
     return root
 
@@ -264,8 +292,8 @@ def test_load_db(fpath):
 
 
 def main(path):
-    # test_gen_write_db(path)
-    test_load_db(path)
+    test_gen_write_db(path)
+    # test_load_db(path)
 
 
 if __name__ == '__main__':
@@ -278,6 +306,13 @@ TODO:
     i.e. when dirs cant be scanned due to permission denied we'll see a difference between actual disk usage and our
     calculation. the difference can be treated as its own "unknown" cell
 - add some sort of option to prevent scans from crossing mountpoints
+- multiple roots
+- list mode:
+    - hide dot files
+    - list subdirs first
+- link to dir/file by permanent URL
+    - we use id()s now
+    - switch to path, finding a node by following the path through the database should be inexpensive
 
 App planning:
 - single page webui

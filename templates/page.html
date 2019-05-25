@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NAS Viewer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        div.children > div {
+            padding: 0px 15px;
+        }
+        div.dirs {
+            float: left;
+            width: 50%;
+        }
+        div.files {
+            float: right;
+            width: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewer">
+        <h1>{{ node.path|pathjoin }}</h1>
+        <div>
+            <ul>
+                <li><strong>Controls:</strong> {% if node.parent %}<a href="/?n={{ node.parent|id }}">up</a>{% else %}up{% endif %}</li>
+                <li><strong>Sort by:</strong> name children size up down
+            </ul>
+
+            <ul>
+                <li>Type: {{ node.typ }}</li>
+                <li>Size: {{ node.size|commafy }} B</li>
+                <li>Total Size: {{ node.total_size|commafy }} B</li>
+                <li>Recursive Children: {{ node.total_children|commafy }}</li>
+                <li>Children: {{ node.children|len }}</li>
+            </ul>
+        </div>
+        {% if node.typ in (NodeType.ROOT, NodeType.DIR) %}
+        <div class="children">
+            <div class="dirs">
+                <h2>Subdirs:</h2>
+                {% for child in node.children|sort(attribute='total_children', reverse=True) %}{% if child.typ in NodeGroup.DIRLIKE %}
+                    <hr />
+                    <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|commafy }}B - {{ child.total_children|commafy }} children
+                {% endif %}{% endfor %}
+            </div>
+            <div class="files">
+                <h2>Files:</h2>
+                {% for child in node.children|sort(attribute='name') %}{% if child.typ in NodeGroup.FILELIKE %}
+                    <hr />
+                    <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|commafy }}B
+                {% endif %}{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

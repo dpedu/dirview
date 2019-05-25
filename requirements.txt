@@ -1,0 +1,13 @@
+backports.functools-lru-cache==1.5
+cheroot==6.5.5
+CherryPy==18.1.1
+-e git+ssh://git@git.davepedu.com:223/dave/dirview.git@2970c139b9004b0d1231f0a33ab418a7b363fbbf#egg=dirview
+jaraco.functools==2.0
+Jinja2==2.10.1
+MarkupSafe==1.1.1
+more-itertools==7.0.0
+portend==2.4
+pytz==2019.1
+six==1.12.0
+tempora==1.14.1
+zc.lockfile==1.4
