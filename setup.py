@@ -15,4 +15,8 @@ setup(name='dirview',
               "dirviewd = dirview:main"
           ]
       },
+      package_data={'dirview': ['../templates/*.html',
+                                # '../templates/fragments/*.html',
+                                # '../styles/dist/*'
+                                ]},
       zip_safe=False)

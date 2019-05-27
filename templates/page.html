@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>NAS Viewer</title>
+    <script src="/static/scripts.js" type="text/javascript"></script>
     <style>
         * {
             box-sizing: border-box;
+        }
+        h1 {
+            word-wrap: break-word;
         }
         div.children > div {
             padding: 0px 15px;
@@ -18,9 +22,67 @@
             float: right;
             width: 50%;
         }
+
+
+
+         svg {
+        background-color: rgb(250,250,250);
+      }
+
+      #title {
+        letter-spacing: 4px;
+        font-weight: 700;
+        font-size: x-large;
+      }
+
+      text.tiny {
+        font-size: 10pt;
+      }
+      text.light {
+        fill: lightgrey
+      }
+
+      .world {
+        stroke: lightgrey;
+            stroke-width: 4px;
+      }
+
+      .cell {
+        stroke: white;
+        stroke-width: 1px;
+      }
+
+      .label {
+        text-anchor: middle;
+        fill: white;
+      }
+
+      .label>.name {
+        dominant-baseline: text-after-edge;
+      }
+
+      .label>.value {
+        dominant-baseline: text-before-edge;
+      }
+
+      .hoverer {
+        fill: transparent;
+        stroke: white;
+        stroke-width:0px;
+      }
+
+      .hoverer:hover {
+        stroke-width: 3px;
+      }
+
+      .legend-color {
+        stroke-width: 1px;
+        stroke:darkgrey;
+      }
     </style>
 </head>
-<body>
+<body onload="p_init();">
+    <svg></svg>
     <div class="viewer">
         <h1>{{ node.path|pathjoin }}</h1>
         <div>
@@ -32,7 +94,7 @@
             <ul>
                 <li>Type: {{ node.typ }}</li>
                 <li>Size: {{ node.size|commafy }} B</li>
-                <li>Total Size: {{ node.total_size|commafy }} B</li>
+                <li>Total Size: {{ node.total_size|data }}</li>
                 <li>Recursive Children: {{ node.total_children|commafy }}</li>
                 <li>Children: {{ node.children|len }}</li>
             </ul>
@@ -43,14 +105,14 @@
                 <h2>Subdirs:</h2>
                 {% for child in node.children|sort(attribute='total_children', reverse=True) %}{% if child.typ in NodeGroup.DIRLIKE %}
                     <hr />
-                    <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|commafy }}B - {{ child.total_children|commafy }} children
+                    <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|data }} - {{ child.total_children|commafy }} children
                 {% endif %}{% endfor %}
             </div>
             <div class="files">
                 <h2>Files:</h2>
                 {% for child in node.children|sort(attribute='name') %}{% if child.typ in NodeGroup.FILELIKE %}
                     <hr />
-                    <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|commafy }}B
+                    <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|data }}
                 {% endif %}{% endfor %}
             </div>
         </div>

@@ -1,0 +1,19 @@
+{
+  "name": "dirview",
+  "version": "1.0.0",
+  "description": "directory visualizer ui",
+  "main": null,
+  "repository": "ssh://git@git.davepedu.com:223/dave/dirview.git",
+  "author": "dave <dave@davepedu.com>",
+  "license": "None",
+  "private": true,
+  "dependencies": {
+    "d3": "^5.9.2",
+    "d3-voronoi-treemap": "^1.1.0",
+    "grunt": "^1.0.4",
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-contrib-watch": "^1.1.0",
+    "randomcolor": "^0.5.4"
+  },
+  "scripts": {}
+}

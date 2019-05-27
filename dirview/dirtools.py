@@ -44,7 +44,7 @@ class Node:
     @property
     def total_size(self) -> int:
         if self.total_size_cache is None:
-            if self.typ in {NodeType.DIR, NodeType.ROOT}:
+            if self.typ in NodeGroup.DIRLIKE:
                 self.total_size_cache = sum([node.total_size for node in self.children])
             else:
                 self.total_size_cache = self.size
@@ -58,7 +58,7 @@ class Node:
             self.total_children_cache = sum([c.total_children for c in self.children]) + len(self.children)
         return self.total_children_cache
 
-    def serialize(self) -> tuple:
+    def serialize(self) -> dict:
         """
         Return a dictionary representation of the node suitable for plain text serialization such as json.
 
@@ -124,14 +124,18 @@ def gen_db_recurse(dirpath, parent=None, is_root=False):
                 size=0,
                 parent=parent)
 
-    if node.typ in {NodeType.FILE}:  # todo account for link and dir sizes somewhere
-        node.size = os.path.getsize(dirpath)
+    # TODO replace the below try/except with stat()
+    if node.typ == NodeType.FILE:  # todo account for link and dir sizes somewhere
+        try:
+            node.size = os.path.getsize(dirpath)
+        except (PermissionError, FileNotFoundError, OSError) as e:
+            logging.warning(f"Could not access {dirpath}: {e}")
 
     if os.path.isdir(dirpath) and not os.path.islink(dirpath):
         flist = []
         try:
             flist = os.listdir(dirpath)
-        except PermissionError as e:
+        except (PermissionError, FileNotFoundError, OSError) as e:
             logging.info(f"Could not access {dirpath}: {e}")
         for i in flist: # TODO we could probably parallelize the recursion down different trees?
             children.append(gen_db_recurse(os.path.join(dirpath, i), parent=node))
@@ -314,6 +318,10 @@ TODO:
 - link to dir/file by permanent URL
     - we use id()s now
     - switch to path, finding a node by following the path through the database should be inexpensive
+- on 'still scanning' page estimate a completion percentage based on $tree_total_size / $disk_used
+    - this implies no filesystem crossing
+        - unless we're incrementally updating the tree lol -
+            we can get % done based on parents touched vs previous node count
 
 App planning:
 - single page webui
