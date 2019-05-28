@@ -1,3 +1,6 @@
+const webpackConfig = require('./webpack.config.js');
+
+
 module.exports = function(grunt) {
   grunt.initConfig({
     /*less: {
@@ -16,7 +19,11 @@ module.exports = function(grunt) {
         }
       }
     },*/
-    concat: {
+    webpack: {
+      dev: webpackConfig,
+    },
+
+    /*concat: {
       deps_js: {
         src: [
           'node_modules/d3-voronoi-treemap/build/d3-voronoi-treemap.js',
@@ -29,11 +36,11 @@ module.exports = function(grunt) {
         ],
         dest: 'static/scripts.js',
       },
-    },
+    },*/
     watch: {
       concat: {
-        files: ['assets/js/main.js'],
-        tasks: ['concat:deps_js'],
+        files: ['assets/js/*.js'],
+        tasks: ['webpack:dev'],
         // options: {
         //   spawn: false
         // }
@@ -44,9 +51,10 @@ module.exports = function(grunt) {
   // grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-contrib-watch');
   // grunt.loadNpmTasks('grunt-contrib-cssmin');
-  grunt.loadNpmTasks('grunt-contrib-concat');
+  // grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-webpack');
 
   // grunt.registerTask('default', ['less:website', 'cssmin:website', 'concat:dist']);
-  grunt.registerTask('default', ['concat:deps_js']);
+  grunt.registerTask('default', ['webpack:dev']);
 
 };
