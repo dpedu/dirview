@@ -91,16 +91,33 @@ class AppWeb(object):
         return json.dumps(data).encode("utf-8")
 
     @staticmethod
-    def export_children(entry, depth):
+    def export_children(entry, depth, max_children=10):
         children = []
         if depth:
+            others = []
+
             for child in entry.children:
                 child_data = AppWeb.export_children(child, depth - 1)
+
                 if entry.total_size > 0:
                     child_data["weight"] = child_data["size"] / entry.total_size
                 else:
-                    child_data["weight"] = 0;
-                children.append(child_data)
+                    child_data["weight"] = 0
+
+                if len(children) < max_children:
+                    children.append(child_data)
+                else:
+                    others.append(child_data)
+
+            if others:
+                other_sz = sum([i["size"] for i in others])
+                children.append({"name": f"({len(others)} others)",
+                                 "typ": NodeType.SPECIAL.value,
+                                 "size": other_sz,
+                                 "children": [],
+                                 "weight": other_sz / entry.total_size if entry.total_size > 0 else 0,
+                                 })
+
         children.sort(key=lambda c: c["size"],
                       reverse=True)
 

@@ -8,9 +8,11 @@
   "license": "None",
   "private": true,
   "dependencies": {
+    "chroma-js": "^2.0.3",
     "d3": "^5.9.2",
     "d3-voronoi-treemap": "^1.1.0",
-    "randomcolor": "^0.5.4"
+    "randomcolor": "^0.5.4",
+    "round-to": "^4.0.0"
   },
   "scripts": {},
   "devDependencies": {
