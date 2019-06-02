@@ -1,0 +1,6 @@
+testenv
+testdir
+node_modules
+testlink
+dirview.egg-info
+__pycache__

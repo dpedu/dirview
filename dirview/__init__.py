@@ -49,7 +49,7 @@ class AppWeb(object):
         return self.tpl.get_template(template). \
             render(**kwargs,
                    NodeType=NodeType,
-                   NodeGroup=NodeGroup) #, **self.get_default_vars())
+                   NodeGroup=NodeGroup)  #, **self.get_default_vars())
 
     @cherrypy.expose
     def index(self, n=None):
@@ -69,62 +69,79 @@ class AppWeb(object):
         dur = time() - start
         return page + f"\n<!-- render time: {round(dur, 4)} -->"
 
-        # yield str(self.db.root)
-        # yield "Ready<br />"
-        # from time import time
-        # start = time()
-        # num_nodes = len([i for i in self.db.root.iter()])
-        # dur = time() - start
-        # yield f"num nodes: {num_nodes} in {round(dur, 3)}"
-
     @cherrypy.expose
     def chart_json(self, n, depth=2):
-        # try:
-        #     node = self.db.index[int(n)]
-        # except (ValueError, KeyError):
-        #     raise cherrypy.HTTPError(404)
-        node = self.db.root
+        start = time()
+        try:
+            node = self.db.index[int(n)]
+        except (ValueError, KeyError):
+            raise cherrypy.HTTPError(404)
 
         data = AppWeb.export_children(node, depth=int(depth))
+        data["render_time"] = round(time() - start, 4)
 
         cherrypy.response.headers["Content-type"] = "application/json"
         return json.dumps(data).encode("utf-8")
 
     @staticmethod
-    def export_children(entry, depth, max_children=10):
+    def export_children(entry, depth, min_children=25, max_children=50):
+        """
+        :param entry: node to recurse from. is included as the parent
+        :param depth: how many layers to add under the parent node
+        :param max_children: maximum number of children under a node, others are combined
+        :param thresh: nodes smaller than this size will be combined into a group
+        """
         children = []
         if depth:
-            others = []
-
             for child in entry.children:
-                child_data = AppWeb.export_children(child, depth - 1)
+                if child.total_size > 0:
+                    children.append(AppWeb.export_children(child,
+                                                           depth=depth - 1,
+                                                           min_children=min_children,
+                                                           max_children=max_children))
 
-                if entry.total_size > 0:
-                    child_data["weight"] = child_data["size"] / entry.total_size
-                else:
-                    child_data["weight"] = 0
+            children.sort(key=lambda c: c["value"],
+                          reverse=True)
 
-                if len(children) < max_children:
-                    children.append(child_data)
-                else:
-                    others.append(child_data)
+            # scan down the children until we've covered $thresh of the parent size
+            thresh = 0.95    # The lower (1-$thresh) of nodes, sorted by size, will be combined into a group
+            min_size = 100 / max_children / 100  # 50 max children means nodes under 2% max size must be combined
+            child_sum = 0
+
+            last_offset = 0
+            for offset, child in enumerate(children):
+                child_sum += child["value"]
+                last_offset = offset
+                if offset > max_children:
+                    break  # max children
+                    # continue  # min children
+                if child["value"] / entry.total_size < min_size and offset > min_children:
+                    break
+                if child_sum / entry.total_size > thresh:
+                    break
+
+            others = children[last_offset + 1:]
+            children = children[0:last_offset + 1]
 
             if others:
-                other_sz = sum([i["size"] for i in others])
-                children.append({"name": f"({len(others)} others)",
-                                 "typ": NodeType.SPECIAL.value,
-                                 "size": other_sz,
+                other_sz = sum([i["value"] for i in others])
+                other_children = sum([i["num_children"] for i in others])
+                children.append({"id": id(others[0]),
+                                 "name": f"({len(others)} others)",
+                                 "typ": -1,
+                                 "value": max(other_sz, 1),
                                  "children": [],
-                                 "weight": other_sz / entry.total_size if entry.total_size > 0 else 0,
+                                 "num_children": other_children,
+                                 "total_children": child["total_children"],
                                  })
 
-        children.sort(key=lambda c: c["size"],
-                      reverse=True)
-
-        return {"name": entry.name,
+        return {"id": id(entry),
+                "name": entry.name,
                 "typ": entry.typ.value,
-                "size": entry.total_size,
-                "children": children}
+                "value": max(entry.total_size, 1),
+                "children": children,
+                "num_children": len(entry.children),
+                "total_children": entry.total_children, }
 
 
 def main():
@@ -141,7 +158,7 @@ def main():
     logging.basicConfig(level=logging.INFO if args.debug else logging.WARNING,
                         format="%(asctime)-15s %(levelname)-8s %(filename)s:%(lineno)d %(message)s")
 
-    tpl_dir = os.path.join(APPROOT, "templates") if not args.debug else "templates"
+    tpl_dir = os.path.join(APPROOT, "templates")
     db = DbUpdater(args.dir, args.cache)
     db.start()
 

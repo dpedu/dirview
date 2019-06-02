@@ -23,6 +23,17 @@ module.exports = function(grunt) {
       dev: webpackConfig,
     },
 
+    babel: {
+      options: {
+        sourceMap: true
+      },
+      dist: {
+        files: {
+          "static/scripts.js": "static/scripts.jsx"
+        }
+      }
+    },
+
     /*concat: {
       deps_js: {
         src: [
@@ -40,7 +51,7 @@ module.exports = function(grunt) {
     watch: {
       concat: {
         files: ['assets/js/*.js'],
-        tasks: ['webpack:dev'],
+        tasks: ['webpack:dev', 'babel'],
         // options: {
         //   spawn: false
         // }
@@ -53,8 +64,9 @@ module.exports = function(grunt) {
   // grunt.loadNpmTasks('grunt-contrib-cssmin');
   // grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-webpack');
+  grunt.loadNpmTasks('grunt-babel');
 
   // grunt.registerTask('default', ['less:website', 'cssmin:website', 'concat:dist']);
-  grunt.registerTask('default', ['webpack:dev']);
+  grunt.registerTask('default', ['webpack:dev', 'babel']);
 
 };

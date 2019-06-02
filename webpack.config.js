@@ -4,11 +4,12 @@ module.exports = {
   entry: './assets/js/main.js',
   output: {
     path: path.resolve('static'),
-    filename: 'scripts.js',
+    filename: 'scripts.jsx',
     libraryTarget: 'var',
     library: 'Application'
   },
   module: {
+    // devtool: 'source-map'
     /*loaders: [
       { test: /\.js$/, loader: 'babel-loader', exclude: /node_modules/ }
      ]*/
