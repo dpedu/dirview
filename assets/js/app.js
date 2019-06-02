@@ -24,8 +24,8 @@ export default {
 
 function boot() {
     winsize = {
-        w: $("#svg-container").width(),
-        h: window.innerHeight * 0.5
+        w: Math.round($("#svg-container").width()),
+        h: Math.round(window.innerHeight * 0.5)
     }
     prep_graph();
 }
@@ -34,12 +34,22 @@ var winsize = null;
 var the_color = chroma(randomColor()).darken().darken().darken().hex();
 
 function prep_graph() {
-    d3.select('svg')
+    // Add placeholder graphics
+    d3.select('svg')  // tint
+        .append("rect")
+        .attr("class", "placeholder")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr('fill', the_color)
+
+    d3.select('svg')  // loading message
         .attr('width', winsize.w)
         .attr('height', winsize.h)
         .append("text")
+        .attr('dx', 2)
         .attr('dy', "1em")
-        .text("loading chart...");
+        .text("loading chart...")
+        .attr('fill', '#fff')
 
     d3.json("/chart.json?n=" + _node + "&depth=" + _graph_depth).then(draw_graph);
 }
@@ -50,7 +60,10 @@ function can_click(d) {
 
 function draw_graph(data) {
     console.log("data fetched in: " + data.render_time + "s")
+    // remove placeholder graphics
     d3.select('svg text').remove()
+    d3.select('svg .placeholder').remove()
+
     var treemapLayout = d3.treemap().tile(d3.treemapBinary); // treemapBinary, treemapSquarify
 
     treemapLayout
@@ -59,7 +72,6 @@ function draw_graph(data) {
         .paddingRight(6)
         .paddingBottom(6)
         .paddingLeft(6)
-
 
     var root = d3.hierarchy(data);
 
@@ -106,14 +118,14 @@ function draw_graph(data) {
             return d.data.name + (d.data.typ == DIR? "/":"")
         })
 
-    // Size values
+    // Size labels
     nodes
         .append('text')
         .attr('fill', '#fff')
         .attr('dx', 2)
         .attr('dy', "2em")
         .text(function(d) {
-            return filesize(d.data.value, {round: 0});
+            return filesize(d.data.value, {round: 1});
         })
         .attr('clip-path', function(d) {return "url(#clip-" + d.data.id + ")"})
 
