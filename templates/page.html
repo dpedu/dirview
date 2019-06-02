@@ -11,11 +11,8 @@
     <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body onload="Application.boot();">
-    <div class="header">
-        <div id="svg-container">
-            <svg><g class="chart"></g></svg>
-        </div>
-        <div class="key">
+    <div id="header">
+        <div id="key">
             <h1>{{ node.path|pathjoin }}</h1>
             <div>
                 <ul>
@@ -31,26 +28,27 @@
                 </ul>
             </div>
         </div>
-    </div>
-    <div class="viewer">
-        {% if node.typ in (NodeType.ROOT, NodeType.DIR) %}
-        <div class="children">
-            <div class="dirs">
-                <h2>Subdirs:</h2>
-                {% for child in node.children|sort(attribute='total_children', reverse=True) %}{% if child.typ in NodeGroup.DIRLIKE %}
-                    <hr />
-                    <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|data }} - {{ child.total_children|commafy }} children
-                {% endif %}{% endfor %}
-            </div>
-            <div class="files">
-                <h2>Files:</h2>
-                {% for child in node.children|sort(attribute='name') %}{% if child.typ in NodeGroup.FILELIKE %}
-                    <hr />
-                    <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|data }}
-                {% endif %}{% endfor %}
-            </div>
+        <div id="svg-container">
+            <svg><g class="chart"></g></svg>
         </div>
-        {% endif %}
     </div>
+    {% if node.typ in (NodeType.ROOT, NodeType.DIR) %}
+    <div id="index">
+        <div id="dirs">
+            <h2>Subdirs:</h2>
+            {% for child in node.children|sort(attribute='total_children', reverse=True) %}{% if child.typ in NodeGroup.DIRLIKE %}
+                <hr />
+                <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|data }} - {{ child.total_children|commafy }} children
+            {% endif %}{% endfor %}
+        </div>
+        <div id="files">
+            <h2>Files:</h2>
+            {% for child in node.children|sort(attribute='name') %}{% if child.typ in NodeGroup.FILELIKE %}
+                <hr />
+                <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|data }}
+            {% endif %}{% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </body>
 </html>

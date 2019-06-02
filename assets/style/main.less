@@ -1,3 +1,6 @@
+@import "mixins.less";
+
+
 // general styles
 body {
     background-color: #333;
@@ -19,18 +22,29 @@ a:visted {
     color: #6ff;
 }
 // Layout
-div.children {
-    div {
-        padding: 0px 15px;
-    }
+div#header {
+    .clearfix();
 }
-div.dirs {
+div#key {
     float: left;
-    width: 50%;
+    width: 30%;
 }
-div.files {
+div#svg-container {
     float: right;
-    width: 50%;
+    width: 70%;
+}
+div#index {
+    .clearfix();
+    div#dirs {
+        float: left;
+        width: 50%;
+        padding-right: 15px;
+    }
+    div#files {
+        float: right;
+        width: 50%;
+        padding-left: 15px;
+    }
 }
 // Details
 svg {

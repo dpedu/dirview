@@ -1,7 +1,5 @@
 import os
 import sys
-# import locale
-# locale.setlocale(locale.LC_ALL, 'en_US')
 import logging
 import cherrypy
 from threading import Thread
