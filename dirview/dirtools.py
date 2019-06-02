@@ -230,6 +230,15 @@ def load_db(fpath):
     return root
 
 
+def node_by_path(db, path):
+    if not path:
+        return db
+
+    for node in db.children:
+        if node.name == path[0]:
+            return node_by_path(node, path[1:])
+
+
 def test_gen_write_db(path):
     path = os.path.normpath(os.path.abspath(path))
 

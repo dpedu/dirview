@@ -4,7 +4,7 @@ import logging
 import cherrypy
 from threading import Thread
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from dirview.dirtools import gen_db, gen_node_index, NodeType, NodeGroup
+from dirview.dirtools import gen_db, gen_node_index, node_by_path, NodeType, NodeGroup
 from dirview.utils import jinja_filters
 from time import time
 import json
@@ -37,7 +37,7 @@ class AppWeb(object):
     def __init__(self, database, template_dir):
         self.db = database
         self.tpl = Environment(loader=FileSystemLoader(template_dir),
-                               autoescape=select_autoescape(['html', 'xml']))
+                               autoescape=select_autoescape(["html", "xml"]))
         self.tpl.filters.update(**jinja_filters)
 
     def render(self, template, **kwargs):
@@ -49,22 +49,32 @@ class AppWeb(object):
                    NodeType=NodeType,
                    NodeGroup=NodeGroup)  #, **self.get_default_vars())
 
+    def _cp_dispatch(self, vpath):
+        return self.index
+
     @cherrypy.expose
-    def index(self, n=None):
+    def index(self, *args, n=None):
         start = time()
         if self.db.root is None:
             return "I'm still scanning your files, check back soon."
 
-        if n is None:
-            node = self.db.root
-        else:
+        if n:
             try:
                 node = self.db.index[int(n)]
-            except (ValueError, KeyError):
+            except KeyError:
+                raise cherrypy.HTTPError(404)
+            raise cherrypy.HTTPRedirect("/".join(node.path[1:]))
+        else:
+            path = cherrypy.request.path_info[1:].split("/")
+            if path and path[0] == "":
+                path = []  # :/
+            node = node_by_path(self.db.root, path)
+            if not node:
                 raise cherrypy.HTTPError(404)
 
         page = self.render("page.html", node=node, root=self.db.root)
         dur = time() - start
+
         return page + f"\n<!-- render time: {round(dur, 4)} -->"
 
     @cherrypy.expose
@@ -147,10 +157,10 @@ def main():
     import signal
 
     parser = argparse.ArgumentParser(description="NAS storage visualizer")
-    parser.add_argument('-d', '--dir', required=True, help="directory to scan")
-    parser.add_argument('--cache', help="cache dir")
-    parser.add_argument('-p', '--port', default=8080, type=int, help="http port to listen on")
-    parser.add_argument('--debug', action="store_true", help="enable development options")
+    parser.add_argument("-d", "--dir", required=True, help="directory to scan")
+    parser.add_argument("--cache", help="cache dir")
+    parser.add_argument("-p", "--port", default=8080, type=int, help="http port to listen on")
+    parser.add_argument("--debug", action="store_true", help="enable development options")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO if args.debug else logging.WARNING,
@@ -162,25 +172,25 @@ def main():
 
     web = AppWeb(db, tpl_dir)
 
-    cherrypy.tree.mount(web, '/',
-                        {'/': {},
-                         '/static': {"tools.staticdir.on": True,
+    cherrypy.tree.mount(web, "/",
+                        {"/": {},
+                         "/static": {"tools.staticdir.on": True,
                                      "tools.staticdir.dir": os.path.join(APPROOT, "static")},  # TODO non --debug path
-                         # '/login': {'tools.auth_basic.on': True,
-                         #           'tools.auth_basic.realm': 'webapp',
-                         #           'tools.auth_basic.checkpassword': validate_password}})
+                         # "/login": {"tools.auth_basic.on": True,
+                         #           "tools.auth_basic.realm": "webapp",
+                         #           "tools.auth_basic.checkpassword": validate_password}})
                          })
 
     cherrypy.config.update({
-        'tools.sessions.on': False,
-        'server.socket_host': '0.0.0.0',
-        'server.socket_port': args.port,
-        'server.thread_pool': 5,
-        'engine.autoreload.on': args.debug
+        "tools.sessions.on": False,
+        "server.socket_host": "0.0.0.0",
+        "server.socket_port": args.port,
+        "server.thread_pool": 5,
+        "engine.autoreload.on": args.debug
     })
 
     def signal_handler(signum, stack):
-        logging.critical('Got sig {}, exiting...'.format(signum))
+        logging.critical("Got sig {}, exiting...".format(signum))
         cherrypy.engine.exit()
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -196,5 +206,5 @@ def main():
         cherrypy.engine.exit()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

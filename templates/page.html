@@ -49,14 +49,14 @@
             <h2>Subdirs:</h2>
             {% for child in node.children|sort(attribute='total_children', reverse=True) %}{% if child.typ in NodeGroup.DIRLIKE %}
                 <hr />
-                <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|data }} - {{ child.total_children|commafy }} children
+                <a href="/{{ child.path[1:]|pathjoin }}">{{ child.name }}</a>: {{ child.total_size|data }} - {{ child.total_children|commafy }} children
             {% endif %}{% endfor %}
         </div>
         <div id="files">
             <h2>Files:</h2>
             {% for child in node.children|sort(attribute='name') %}{% if child.typ in NodeGroup.FILELIKE %}
                 <hr />
-                <a href="/?n={{ child|id }}">{{ child.name }}</a>: {{ child.total_size|data }}
+                <a href="/{{ child.path[1:]|pathjoin }}">{{ child.name }}</a>: {{ child.total_size|data }}
             {% endif %}{% endfor %}
         </div>
     </div>
