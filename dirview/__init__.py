@@ -175,13 +175,10 @@ def main():
 
     cherrypy.config.update({
         'tools.sessions.on': False,
-        'request.show_tracebacks': True, #??
-        'server.show_tracebacks': True,  #??
-        'server.socket_port': args.port,
         'server.socket_host': '0.0.0.0',
+        'server.socket_port': args.port,
         'server.thread_pool': 5,
-        'engine.autoreload.on': args.debug,
-        'log.screen': False, #??
+        'engine.autoreload.on': args.debug
     })
 
     def signal_handler(signum, stack):
@@ -198,7 +195,6 @@ def main():
         cherrypy.engine.start()
         cherrypy.engine.block()
     finally:
-        logging.info("API has shut down")
         cherrypy.engine.exit()
 
 

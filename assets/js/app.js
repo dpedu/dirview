@@ -1,3 +1,4 @@
+import $ from "jquery"
 import * as d3 from 'd3'
 import treemap from 'd3-hierarchy'
 import randomColor from 'randomcolor'
@@ -18,15 +19,28 @@ cellColors[ROOT] = randomColor();
 cellColors[LINK] = randomColor();
 cellColors[SPECIAL] = randomColor();
 
-function boot() {
-    prep_graph();
-}
-
 export default {
    boot: function(){boot();}
 }
 
+function boot() {
+    winsize = {
+        w: $("#svg-container").width(),
+        h: window.innerHeight * 0.5
+    }
+    prep_graph();
+}
+
+var winsize = null
+
 function prep_graph() {
+    d3.select('svg')
+        .attr('width', winsize.w)
+        .attr('height', winsize.h)
+        .append("text")
+        .attr('dy', "1em")
+        .text("loading chart...");
+
     d3.json("/chart.json?n=" + _node + "&depth=" + _graph_depth).then(draw_graph);
 }
 
@@ -35,20 +49,17 @@ function can_click(d) {
 }
 
 function draw_graph(data) {
-    var chart_width = document.getElementsByTagName("body")[0].clientWidth;
-    var chart_height = window.innerHeight * 0.5;
-
+    console.log("data fetched in: " + data.render_time + "s")
+    d3.select('svg text').remove()
     var treemapLayout = d3.treemap().tile(d3.treemapBinary); // treemapBinary, treemapSquarify
 
     treemapLayout
-        .size([chart_width, chart_height])
+        .size([winsize.w, winsize.h])
         .paddingTop(25)
         .paddingRight(6)
         .paddingBottom(6)
         .paddingLeft(6)
 
-
-    d3.select('svg').attr('width', chart_width).attr('height', chart_height);
 
     var root = d3.hierarchy(data);
 
@@ -69,7 +80,7 @@ function draw_graph(data) {
     // Create the colored rectangles
     nodes
         .append('rect')
-        // .attr('fill', function(d){return randomColor()})
+        .attr('fill', function(d){return randomColor()})
         .attr('width', function(d) { return d.x1 - d.x0; })
         .attr('height', function(d) { return d.y1 - d.y0; })
         .attr('id', function(d) {return "node-" + d.data.id;})

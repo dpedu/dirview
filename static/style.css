@@ -1,0 +1,56 @@
+* {
+    box-sizing: border-box;
+}
+h1 {
+    word-wrap: break-word;
+}
+div.children > div {
+    padding: 0px 15px;
+}
+div.dirs {
+    float: left;
+    width: 50%;
+}
+div.files {
+    float: right;
+    width: 50%;
+}
+svg {
+    max-width: 100%;
+    color: #fff;
+    font-size: 10px;
+    font-family: arial, sans-serif;
+}
+svg rect {
+    fill: cadetblue;
+    opacity: 0.5;
+    stroke: white;
+}
+svg g.chart>g.can-navigate:hover {
+    cursor: pointer;
+}
+svg g.chart>g.can-navigate:hover a {
+    text-decoration: underline;
+}
+@keyframes hoverfade {
+    0%   {
+        opacity: 0.5;
+        stroke: white;
+    }
+    50%  {
+        opacity: 0.2;
+        stroke: black;
+    }
+    100% {
+        opacity: 0.5;
+        stroke: white;
+    }
+}
+
+svg g.chart>g.can-navigate:hover rect {
+    animation: hoverfade 0.5s infinite;
+    stroke: black;
+}
+svg a:hover {
+
+}

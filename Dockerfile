@@ -15,12 +15,6 @@ RUN sed -i -E 's/(archive|security).ubuntu.com/192.168.1.142/' /etc/apt/sources.
     apt-get autoremove -y && \
     rm -rf /var/lib/{apt,dpkg,cache,log}/
 
-# RUN apt-get update && \
-#     apt-get install -y python3 git wget && \
-#     wget -q -O /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py && \
-#     python3 /tmp/get-pip.py && \
-#     rm /tmp/get-pip.py
-
 ADD . /tmp/code
 
 RUN cd /tmp/code && \
