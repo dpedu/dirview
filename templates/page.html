@@ -11,25 +11,28 @@
     <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body onload="Application.boot();">
-    <div id="svg-container">
-        <svg><g class="chart"></g></svg>
+    <div class="header">
+        <div id="svg-container">
+            <svg><g class="chart"></g></svg>
+        </div>
+        <div class="key">
+            <h1>{{ node.path|pathjoin }}</h1>
+            <div>
+                <ul>
+                    <li><strong>Controls:</strong> {% if node.parent %}<a href="/?n={{ node.parent|id }}">up</a>{% else %}up{% endif %}</li>
+                    <li><strong>Sort by:</strong> name children size up down
+                </ul>
+                <ul>
+                    <li>Type: {{ node.typ }}</li>
+                    <li>Size: {{ node.size|commafy }} B</li>
+                    <li>Total Size: {{ node.total_size|data }}</li>
+                    <li>Recursive Children: {{ node.total_children|commafy }}</li>
+                    <li>Children: {{ node.children|len }}</li>
+                </ul>
+            </div>
+        </div>
     </div>
     <div class="viewer">
-        <h1>{{ node.path|pathjoin }}</h1>
-        <div>
-            <ul>
-                <li><strong>Controls:</strong> {% if node.parent %}<a href="/?n={{ node.parent|id }}">up</a>{% else %}up{% endif %}</li>
-                <li><strong>Sort by:</strong> name children size up down
-            </ul>
-
-            <ul>
-                <li>Type: {{ node.typ }}</li>
-                <li>Size: {{ node.size|commafy }} B</li>
-                <li>Total Size: {{ node.total_size|data }}</li>
-                <li>Recursive Children: {{ node.total_children|commafy }}</li>
-                <li>Children: {{ node.children|len }}</li>
-            </ul>
-        </div>
         {% if node.typ in (NodeType.ROOT, NodeType.DIR) %}
         <div class="children">
             <div class="dirs">

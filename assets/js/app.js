@@ -3,8 +3,7 @@ import * as d3 from 'd3'
 import treemap from 'd3-hierarchy'
 import randomColor from 'randomcolor'
 import filesize from 'filesize'
-// import chroma from 'chroma-js'
-// import roundTo from 'round-to'
+import chroma from 'chroma-js'
 
 var DIR = 1
 var FILE = 2
@@ -31,7 +30,8 @@ function boot() {
     prep_graph();
 }
 
-var winsize = null
+var winsize = null;
+var the_color = chroma(randomColor()).darken().darken().darken().hex();
 
 function prep_graph() {
     d3.select('svg')
@@ -80,7 +80,7 @@ function draw_graph(data) {
     // Create the colored rectangles
     nodes
         .append('rect')
-        .attr('fill', function(d){return randomColor()})
+        .attr('fill', the_color)
         .attr('width', function(d) { return d.x1 - d.x0; })
         .attr('height', function(d) { return d.y1 - d.y0; })
         .attr('id', function(d) {return "node-" + d.data.id;})
@@ -93,12 +93,12 @@ function draw_graph(data) {
         .append('use')
         .attr('href', function(d) {return "#node-" + d.data.id;})
 
-
     // Name labels
     nodes
         .append('a')
         .attr('href', function(d){if(can_click(d)) return "/?n=" + d.data.id;})
         .append('text')
+        .attr('fill', '#fff')
         .attr('dx', 2)
         .attr('dy', "1em")
         .attr('clip-path', function(d) {return "url(#clip-" + d.data.id + ")"})
@@ -109,10 +109,11 @@ function draw_graph(data) {
     // Size values
     nodes
         .append('text')
+        .attr('fill', '#fff')
         .attr('dx', 2)
         .attr('dy', "2em")
         .text(function(d) {
-            return filesize(d.data.value);
+            return filesize(d.data.value, {round: 0});
         })
         .attr('clip-path', function(d) {return "url(#clip-" + d.data.id + ")"})
 

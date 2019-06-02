@@ -33,7 +33,14 @@ module.exports = function(grunt) {
         }
       }
     },
-
+    less: {
+      styles: {
+        files: {
+          "static/style.css": "assets/style/main.less"
+        },
+        sourceMap: true
+      }
+    },
     /*concat: {
       deps_js: {
         src: [
@@ -49,12 +56,16 @@ module.exports = function(grunt) {
       },
     },*/
     watch: {
-      concat: {
+      jshits: {
         files: ['assets/js/*.js'],
         tasks: ['webpack:dev', 'babel'],
         // options: {
         //   spawn: false
         // }
+      },
+      cshits: {
+        files: ["assets/style/main.less"],
+        tasks: ['less:styles'],
       }
     }
   });
@@ -65,8 +76,9 @@ module.exports = function(grunt) {
   // grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-webpack');
   grunt.loadNpmTasks('grunt-babel');
+  grunt.loadNpmTasks('grunt-contrib-less');
 
   // grunt.registerTask('default', ['less:website', 'cssmin:website', 'concat:dist']);
-  grunt.registerTask('default', ['webpack:dev', 'babel']);
+  grunt.registerTask('default', ['webpack:dev', 'babel', 'less:styles']);
 
 };
