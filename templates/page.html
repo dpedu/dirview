@@ -13,7 +13,18 @@
 <body onload="Application.boot();">
     <div id="header">
         <div id="key">
-            <h1>{{ node.path|pathjoin }}</h1>
+            <h1>{{ root.path|pathjoin }}</h1>
+            {% macro tree(parts) %}{% if parts|len > 0 %}
+            <ul class="tree">
+                <li>
+                    <div>
+                        <span>{{ parts[0] }}</span>
+                        {{ tree(parts[1:]) }}
+                    </div>
+                </li>
+            </ul>
+            {% endif %}{% endmacro %}
+            {{ tree(node.path[1:]) }}
             <div>
                 <ul>
                     <li><strong>Controls:</strong> {% if node.parent %}<a href="/?n={{ node.parent|id }}">up</a>{% else %}up{% endif %}</li>

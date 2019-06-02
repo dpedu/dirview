@@ -63,7 +63,7 @@ class AppWeb(object):
             except (ValueError, KeyError):
                 raise cherrypy.HTTPError(404)
 
-        page = self.render("page.html", node=node)
+        page = self.render("page.html", node=node, root=self.db.root)
         dur = time() - start
         return page + f"\n<!-- render time: {round(dur, 4)} -->"
 
