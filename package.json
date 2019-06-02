@@ -10,7 +10,7 @@
   "dependencies": {
     "chroma-js": "^2.0.3",
     "d3": "^5.9.2",
-    "d3-voronoi-treemap": "^1.1.0",
+    "d3-hierarchy": "^1.1.8",
     "filesize": "^4.1.2",
     "randomcolor": "^0.5.4"
   },

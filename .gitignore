@@ -1,0 +1,8 @@
+/*.egg-info
+/node_modules
+/static
+/testenv
+/*.log
+/testdir
+
+__pycache__
